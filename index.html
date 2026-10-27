@@ -1,266 +1,61 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
-<title>瞬間英作文 Trainer</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#101827;color:#f3f6fc;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:18px}
-main{max-width:620px;margin:auto}
-h1{font-size:24px}
-p{line-height:1.6}
-.card{background:#1d2a40;border:1px solid #34445d;border-radius:16px;padding:18px;margin:15px 0}
-.question{font-size:24px;line-height:1.6;margin:18px 0}
-button{background:#4389ff;color:white;border:0;border-radius:11px;padding:12px 15px;margin:5px 4px 5px 0;font-size:15px}
-.secondary{background:#40516d}
-textarea{width:100%;height:100px;background:#101827;color:white;border:1px solid #65738b;border-radius:10px;padding:12px;font-size:17px}
-input[type=file]{max-width:100%;margin:12px 0}
-small,.muted{color:#b8c5d8}
-.hidden{display:none}
-#correct{font-size:19px;line-height:1.6}
-hr{border:0;border-top:1px solid #46546b;margin:18px 0}
-</style>
+<meta name="description" content="日本語から、使える英語へ。短期・長期復習で学ぶ瞬間英作文。">
+<title>瞬間英作文 Trainer v0.3</title>
+<link rel="stylesheet" href="styles.css?v=0.3.0">
+<script type="module" src="app.js?v=0.3.0"></script>
 </head>
 <body>
 <main>
-<h1>🎙️ 瞬間英作文 Trainer</h1>
-<p>日本語を見る → 英語で答える → 復習する</p>
-
-<section class="card">
-<strong>📚 問題集</strong>
-<p class="muted">GoogleスプレッドシートからCSVを書き出して読み込めます。</p>
-<input type="file" id="csv" accept=".csv,text/csv">
-<p id="source" class="muted"></p>
-<button class="secondary" id="demo">サンプル問題に戻す</button>
+<header><div><p class="eyebrow">YOUR DAILY ENGLISH PRACTICE</p><h1>瞬間英作文 <span>Trainer</span></h1></div><span class="version">v0.3</span></header>
+<p class="intro">日本語から、使える英語へ。</p>
+<p id="notice" class="notice" role="status" hidden></p>
+<nav aria-label="メニュー"><button id="home-tab" aria-current="page">学習</button><button id="data-tab">問題集・記録</button></nav>
+<div id="home">
+<section id="dashboard" class="card">
+<div class="section-head"><h2>今日のトレーニング</h2><span id="today-label" class="muted"></span></div>
+<p class="muted">復習から始めて、新しい表現へ。</p>
+<div class="metrics"><div><strong id="due-count">0</strong><span>今日の復習</span></div><div><strong id="new-count">0</strong><span>未学習</span></div><div><strong id="weak-count">0</strong><span>苦手問題</span></div></div>
+<div id="daily-done" class="success" hidden></div>
+<label for="session-size">1回の回答数 <small>再挑戦も1回として数えます</small></label>
+<select id="session-size"><option value="5">5問 · まずは少し</option><option value="10" selected>10問 · 毎日の習慣に</option><option value="15">15問 · じっくり練習</option></select>
+<button id="start" class="primary wide">通常学習を始める <span>→</span></button>
+<button id="start-weak" class="secondary wide">苦手集中復習 <span id="weak-badge">0問</span></button>
+<p class="hint">通常学習は予定日が来た復習＋未学習のみ。苦手集中復習は予定日に関係なく苦手問題を練習できます。</p>
 </section>
-
-<section class="card">
-<small id="category"></small>
-<div class="question" id="question"></div>
-<textarea id="answer" placeholder="英語で答えてください"></textarea>
-<p>
-<button id="mic">🎤 音声入力</button>
-<button id="check">答え合わせ</button>
-</p>
-<p id="status" class="muted"></p>
-
-<div id="result" class="hidden">
-<hr>
-<p>模範解答</p>
-<strong id="correct"></strong>
-<p id="comparison" class="muted"></p>
-<button class="secondary" id="speak">🔊 発音を聞く</button>
-<p>自己評価して次へ</p>
-<button data-grade="0">言えない</button>
-<button data-grade="1">迷った</button>
-<button data-grade="2">即答できた</button>
+<section id="practice" class="card" hidden>
+<div class="section-head"><span id="mode-label" class="eyebrow"></span><button id="finish" class="text-button">途中終了</button></div>
+<div class="section-head"><span id="session-progress"></span><span id="session-percent" class="muted"></span></div>
+<progress id="session-bar" max="10" value="0" aria-label="セッションの進捗"></progress>
+<span id="category" class="tag"></span>
+<h2 id="question" class="question" tabindex="-1"></h2>
+<label for="answer" class="muted">英語で答えてみましょう <small>声に出すだけでもOK</small></label>
+<textarea id="answer" lang="en" autocapitalize="sentences" spellcheck="false" placeholder="Type your answer here..."></textarea>
+<div class="answer-actions"><button id="keyboard" class="secondary">キーボードで音声入力</button><button id="mic" class="text-button">音声認識（試験機能）</button></div>
+<p id="status" class="hint" role="status" aria-live="polite"></p>
+<button id="check" class="primary wide">模範解答を見る</button>
+<div id="result" hidden>
+<div class="model-answer"><div class="section-head"><span class="eyebrow">MODEL ANSWER</span><button id="speak" class="secondary">▶ 音声を聞く</button></div><p id="correct" lang="en"></p></div>
+<p class="hint">意味が合っていれば、別の自然な表現でもOK。今回は自己評価で記録します。</p>
+<p class="evaluation-label">どのくらいスムーズに言えましたか？</p>
+<div class="grades"><button data-grade="0"><span>↻</span>言えない<small>3問後に再挑戦</small></button><button data-grade="1"><span>≈</span>迷った<small>明日もう一度</small></button><button data-grade="2"><span>✓</span>即答できた<small>復習間隔を延ばす</small></button></div>
 </div>
 </section>
-
-<section class="card">
-<strong>📊 学習記録</strong>
-<p id="stats"></p>
-<button class="secondary" id="reset">学習履歴をリセット</button>
-</section>
-
-<small>
-CSVはサーバーに送信せず、この端末内で処理します。
-音声認識はiPhoneのキーボードのマイクも利用できます。
-AIによる意味の採点はまだ未実装です。
-</small>
+<section id="summary" class="card" hidden aria-live="polite"><p class="eyebrow">SESSION COMPLETE</p><h2 id="summary-title"></h2><p id="summary-text"></p><div id="summary-counts" class="metrics"></div><p id="summary-note" class="hint"></p><button id="back" class="primary wide">学習ホームへ</button></section>
+<section class="footnote"><strong>小さく繰り返して、言える表現に。</strong><p>即答できたら 2 → 4 → 8 → 16 → 30日後。<br>言えない・迷った問題は、翌日にもう一度。</p></section>
+</div>
+<div id="data" hidden>
+<section class="card"><div class="section-head"><h2>学習記録</h2><span id="learned-percent" class="tag"></span></div><progress id="learned-bar" max="100" value="0" aria-label="学習済みの割合"></progress><dl id="stats" class="stats"></dl><p class="hint">進捗は一度でも回答した問題の割合です。習得率・正答率を表すものではありません。復習予定は学習済み問題のみを数えます。</p></section>
+<section class="card"><h2>問題集</h2><p id="source" class="muted"></p><p>GoogleスプレッドシートのCSVを読み込めます。</p><label for="csv" class="file-label">CSVファイルを選ぶ<input type="file" id="csv" accept=".csv,text/csv"></label><p id="import-status" role="status" class="hint"></p><details><summary>CSVの形式と取り込みについて</summary><p class="hint">必須列：日本語、自然な英語（または英語）<br>任意列：ID、場面<br>UTF-8のCSVに対応。カンマ・改行・引用符を含むセルも読み込めます。同じID・日本語・英語の履歴は引き継ぎます。その他の問題は置き換わります。安定したIDの付与をおすすめします。</p><p class="hint">CSVも回答もアプリのサーバーへ送信しません。元のスプレッドシートを公開する必要はありません。</p></details><button id="demo" class="secondary wide">サンプル20問に切り替える</button></section>
+<section class="card"><h2>音声設定</h2><label for="rate">読み上げ速度</label><select id="rate"><option value="0.7">ゆっくり · 0.7</option><option value="0.85" selected>標準 · 0.85</option><option value="1">自然な速さ · 1.0</option></select><label class="checkbox"><input id="playback" type="checkbox"> サイレントモード対策を試す</label><p class="hint">対応するSafariで音声セッションを再生用に設定します。読み上げ音声・iOSにより効果は異なります。音が出ない場合はサイレントモードを解除し、メディア音量を確認してください。他のアプリの再生が止まる場合があります。</p><p class="hint">iPhoneは英語キーボードのマイクを推奨します。試験機能の音声認識はブラウザ提供元へ音声が送られる場合があります。読み上げは端末・ブラウザの機能を使います。</p></section>
+<section class="card"><h2>データの管理</h2><p class="hint">記録はこのブラウザ・端末内に保存されます。別端末への移行やブラウザデータ削除の前にバックアップしてください。</p><button id="export" class="secondary wide">問題集と履歴をバックアップ</button><label class="file-label">バックアップを復元<input type="file" id="restore" accept=".json,application/json"></label><button id="reset" class="danger wide">学習履歴をリセット</button></section>
+</div>
+<footer>瞬間英作文 Trainer · v0.3.0<br>Practice a little. Speak with confidence.</footer>
+<noscript>このアプリにはJavaScriptを有効にしてください。</noscript>
 </main>
-
-<script>
-const demo=[
-{id:"1",jp:"私は鍼・マッサージ・ストレッチを提供します。",en:"I provide acupuncture, massage, and stretching.",cat:"自己紹介"},
-{id:"2",jp:"選手が目標を達成する手助けをしたい。",en:"I want to help athletes achieve their goals.",cat:"目標"},
-{id:"3",jp:"痛みが出たら教えてください。",en:"Please let me know if you feel any pain.",cat:"施術"},
-{id:"4",jp:"どこに痛みがありますか？",en:"Where do you feel pain?",cat:"問診"},
-{id:"5",jp:"いつから痛みがありますか？",en:"When did the pain start?",cat:"問診"}
-];
-
-const $=id=>document.getElementById(id);
-let cards=demo;
-let current=null;
-let history={};
-
-function loadSaved(){
-try{
-const saved=JSON.parse(localStorage.getItem("iet-cards"));
-if(Array.isArray(saved)&&saved.length)cards=saved;
-history=JSON.parse(localStorage.getItem("iet-history")||"{}");
-}catch(e){history={};}
-}
-
-function save(){
-try{
-localStorage.setItem("iet-cards",JSON.stringify(cards));
-localStorage.setItem("iet-history",JSON.stringify(history));
-}catch(e){
-$("status").textContent="端末の保存容量が不足している可能性があります。";
-}
-}
-
-function next(){
-const due=cards.filter(c=>!history[c.id]||history[c.id].due<=Date.now());
-const pool=due.length?due:cards;
-let choices=pool.filter(c=>!current||c.id!==current.id);
-if(!choices.length)choices=pool;
-current=choices[Math.floor(Math.random()*choices.length)];
-$("question").textContent=current.jp;
-$("category").textContent=current.cat||"";
-$("answer").value="";
-$("result").classList.add("hidden");
-$("status").textContent="";
-updateStats();
-}
-
-function updateStats(){
-const records=cards.map(c=>history[c.id]).filter(Boolean);
-const total=records.reduce((n,r)=>n+r.count,0);
-$("stats").textContent=
-"問題数："+cards.length+
-"問 ／ 学習済み："+records.length+
-"問 ／ 回答回数："+total+"回";
-}
-
-$("check").onclick=()=>{
-$("correct").textContent=current.en;
-const a=$("answer").value.trim().toLowerCase().replace(/[.,!?]/g,"");
-const b=current.en.toLowerCase().replace(/[.,!?]/g,"");
-$("comparison").textContent=
-a===b?"模範解答と一致しました！":
-"模範解答と比較してください。別の自然な表現でも正解の場合があります。";
-$("result").classList.remove("hidden");
-};
-
-document.querySelectorAll("[data-grade]").forEach(btn=>{
-btn.onclick=()=>{
-const grade=Number(btn.dataset.grade);
-const h=history[current.id]||{count:0,streak:0};
-h.count++;
-h.streak=grade===2?h.streak+1:0;
-const days=grade===0?0:grade===1?1:Math.min(30,2**h.streak);
-h.due=Date.now()+days*86400000;
-history[current.id]=h;
-save();
-next();
-};
-});
-
-$("speak").onclick=()=>{
-if(!("speechSynthesis" in window)){
-$("status").textContent="このブラウザでは読み上げできません。";
-return;
-}
-speechSynthesis.cancel();
-const utterance=new SpeechSynthesisUtterance(current.en);
-utterance.lang="en-US";
-utterance.rate=0.85;
-utterance.onerror=()=>{
-$("status").textContent="読み上げに失敗しました。サイレントモードも確認してください。";
-};
-speechSynthesis.speak(utterance);
-};
-
-$("mic").onclick=()=>{
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!SR){
-$("status").textContent="キーボードのマイクから英語を入力してください。";
-$("answer").focus();
-return;
-}
-const recognition=new SR();
-recognition.lang="en-US";
-recognition.onresult=e=>{
-$("answer").value=e.results[0][0].transcript;
-$("status").textContent="音声を入力しました。";
-};
-recognition.onerror=e=>{
-$("status").textContent=
-"音声認識エラー："+e.error+"。キーボードのマイクをお試しください。";
-};
-recognition.start();
-};
-
-function parseCSV(text){
-text=text.replace(/^\uFEFF/,"");
-const rows=[];
-let row=[],cell="",quoted=false;
-for(let i=0;i<text.length;i++){
-const c=text[i];
-if(c==='"'){
-if(quoted&&text[i+1]==='"'){cell+='"';i++;}
-else quoted=!quoted;
-}else if(c===","&&!quoted){
-row.push(cell);cell="";
-}else if((c==="\n"||c==="\r")&&!quoted){
-if(c==="\r"&&text[i+1]==="\n")i++;
-row.push(cell);
-if(row.some(x=>x.trim()))rows.push(row);
-row=[];cell="";
-}else cell+=c;
-}
-row.push(cell);
-if(row.some(x=>x.trim()))rows.push(row);
-return rows;
-}
-
-$("csv").onchange=async event=>{
-const file=event.target.files[0];
-if(!file)return;
-try{
-const rows=parseCSV(await file.text());
-if(rows.length<2)throw Error("データがありません。");
-const headers=rows.shift().map(h=>h.trim().toLowerCase());
-const find=names=>headers.findIndex(h=>names.some(n=>h===n||h.includes(n)));
-const jp=find(["日本語","japanese","jp"]);
-const en=find(["英語","英文","english"]);
-const cat=find(["場面","カテゴリ","scene","category"]);
-const id=find(["id"]);
-if(jp<0||en<0)throw Error("「日本語」と「英語」の列が必要です。");
-
-const imported=rows.filter(r=>r[jp]?.trim()&&r[en]?.trim()).map((r,i)=>({
-id:"csv:"+String(id>=0&&r[id]?r[id]:i+1),
-jp:r[jp].trim(),
-en:r[en].trim(),
-cat:cat>=0?(r[cat]||"").trim():""
-}));
-if(!imported.length)throw Error("有効な例文がありません。");
-cards=imported;
-history={};
-save();
-$("source").textContent=file.name+"： "+cards.length+"問を読み込みました。";
-next();
-}catch(err){
-$("source").textContent="読み込みエラー："+err.message;
-}
-};
-
-$("demo").onclick=()=>{
-if(!confirm("サンプル問題に切り替えますか？"))return;
-cards=demo;
-history={};
-save();
-$("source").textContent="サンプル問題を使用中";
-next();
-};
-
-$("reset").onclick=()=>{
-if(!confirm("学習履歴を削除しますか？"))return;
-history={};
-save();
-next();
-};
-
-loadSaved();
-$("source").textContent=cards===demo?
-"サンプル問題を使用中":
-"保存済みの問題集："+cards.length+"問";
-next();
-</script>
 </body>
 </html>

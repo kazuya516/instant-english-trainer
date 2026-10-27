@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>瞬間英作文 Trainer</title>
+<style>
+body{margin:0;background:#101827;color:#fff;font-family:-apple-system,sans-serif;padding:20px}
+main{max-width:600px;margin:auto}
+h1{font-size:24px}
+.card{background:#1d2a40;border-radius:16px;padding:20px;margin:16px 0}
+.question{font-size:24px;line-height:1.6}
+button{background:#3987ff;color:white;border:0;border-radius:10px;padding:13px;margin:5px 4px 5px 0;font-size:15px}
+textarea{box-sizing:border-box;width:100%;height:100px;background:#101827;color:white;border:1px solid #61708a;border-radius:10px;padding:12px;font-size:17px}
+small{color:#b6c3d5}
+#result{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>🎙️ 瞬間英作文 Trainer</h1>
+<p>日本語を見て、英語で即答しよう！</p>
+<div class="card">
+<small id="category"></small>
+<div class="question" id="question"></div>
+<textarea id="answer" placeholder="英語で答えてください"></textarea>
+<button onclick="record()">🎤 音声入力</button>
+<button onclick="check()">答え合わせ</button>
+<p id="status"></p>
+<div id="result">
+<p>模範解答：</p>
+<strong id="correct"></strong>
+<p id="score"></p>
+<button onclick="speak()">🔊 発音を聞く</button>
+<p>自己評価して次へ</p>
+<button onclick="next(0)">言えない</button>
+<button onclick="next(1)">迷った</button>
+<button onclick="next(2)">即答できた</button>
+</div>
+</div>
+<div class="card">
+<h3>学習記録</h3>
+<p id="stats"></p>
+</div>
+<small>初期版：AI採点とGoogle Sheets自動同期は今後追加します。</small>
+</main>
+<script>
+const questions=[
+{jp:"私は鍼・マッサージ・ストレッチを提供します。",en:"I provide acupuncture, massage, and stretching.",cat:"自己紹介"},
+{jp:"選手が目標を達成する手助けをしたい。",en:"I want to help athletes achieve their goals.",cat:"目標"},
+{jp:"痛みが出たら教えてください。",en:"Please let me know if you feel any pain.",cat:"施術"},
+{jp:"どこに痛みがありますか？",en:"Where do you feel pain?",cat:"問診"},
+{jp:"いつから痛みがありますか？",en:"When did the pain start?",cat:"問診"}
+];
+let current=0;
+let history=JSON.parse(localStorage.getItem("englishHistory")||"{}");
+function show(){
+document.getElementById("question").textContent=questions[current].jp;
+document.getElementById("category").textContent=questions[current].cat;
+document.getElementById("answer").value="";
+document.getElementById("result").style.display="none";
+document.getElementById("status").textContent="";
+document.getElementById("stats").textContent="回答回数："+Object.values(history).reduce((a,b)=>a+b.count,0)+"回";
+}
+function check(){
+const q=questions[current];
+document.getElementById("correct").textContent=q.en;
+const a=document.getElementById("answer").value.toLowerCase().replace(/[^a-z ]/g,"").trim();
+const b=q.en.toLowerCase().replace(/[^a-z ]/g,"").trim();
+document.getElementById("score").textContent=a===b?"模範解答と一致！":"模範解答と比較してみましょう（言い換えも正解の場合があります）";
+document.getElementById("result").style.display="block";
+}
+function next(grade){
+let h=history[current]||{count:0,grade:0};
+h.count++;h.grade=grade;history[current]=h;
+localStorage.setItem("englishHistory",JSON.stringify(history));
+let pool=questions.map((_,i)=>i).filter(i=>!history[i]||history[i].grade<2);
+if(!pool.length)pool=questions.map((_,i)=>i);
+current=pool[Math.floor(Math.random()*pool.length)];
+show();
+}
+function speak(){
+speechSynthesis.cancel();
+const u=new SpeechSynthesisUtterance(questions[current].en);
+u.lang="en-US";u.rate=.85;speechSynthesis.speak(u);
+}
+function record(){
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){document.getElementById("status").textContent="音声認識非対応です。キーボードのマイクを使ってください。";return;}
+const r=new SR();r.lang="en-US";
+r.onresult=e=>document.getElementById("answer").value=e.results[0][0].transcript;
+r.onerror=e=>document.getElementById("status").textContent="音声入力エラー："+e.error;
+r.start();
+}
+current=Math.floor(Math.random()*questions.length);
+show();
+</script>
+</body>
+</html>

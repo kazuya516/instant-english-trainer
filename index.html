@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
 <meta name="description" content="日本語から、使える英語へ。短期・長期復習で学ぶ瞬間英作文。">
-<title>瞬間英作文 Trainer v0.3</title>
+<title>瞬間英作文 Trainer v0.4</title>
 <meta name="apple-mobile-web-app-title" content="英作文 Trainer">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v1.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-v1.png">
-<link rel="stylesheet" href="styles.css?v=0.3.0">
-<script type="module" src="app.js?v=0.3.0"></script>
+<link rel="stylesheet" href="styles.css?v=0.4.0">
+<script type="module" src="app.js?v=0.4.0"></script>
 </head>
 <body>
 <main>
-<header><div><p class="eyebrow">YOUR DAILY ENGLISH PRACTICE</p><h1>瞬間英作文 <span>Trainer</span></h1></div><span class="version">v0.3</span></header>
+<div id="language-switch" class="language-switch" role="group" aria-label="Display language"><button type="button" data-language="ja" aria-pressed="true">日本語</button><button type="button" data-language="en" aria-pressed="false">English</button></div>
+<header><div><p class="eyebrow">YOUR DAILY ENGLISH PRACTICE</p><h1>瞬間英作文 <span>Trainer</span></h1></div><span class="version">v0.4</span></header>
 <p class="intro">日本語から、使える英語へ。</p>
 <p id="notice" class="notice" role="status" hidden></p>
 <nav aria-label="メニュー"><button id="home-tab" aria-current="page">学習</button><button id="data-tab">問題集・記録</button></nav>
@@ -40,11 +41,20 @@
 <textarea id="answer" lang="en" autocapitalize="sentences" spellcheck="false" placeholder="Type your answer here..."></textarea>
 <div class="answer-actions"><button id="keyboard" class="secondary">キーボードで音声入力</button><button id="mic" class="text-button">音声認識（試験機能）</button></div>
 <p id="status" class="hint" role="status" aria-live="polite"></p>
+<section id="recording-panel" class="recording-panel" aria-labelledby="record-heading">
+<h3 id="record-heading">録音して聞き比べる</h3>
+<p class="hint">録音は任意です。答えを見ずに初回を録り、解答確認後に練習後の声と比べられます。</p>
+<div class="record-actions"><button id="record-take" class="record-button">● 初回を録音</button><button id="stop-take" class="secondary" disabled>■ 録音停止</button></div>
+<p id="record-status" class="hint" role="status" aria-live="polite">待機中</p>
+<div class="take-controls"><button id="play-first" class="secondary" disabled>▶ 初回</button><button id="play-practice" class="secondary" disabled>▶ 練習後</button><button id="compare-first" class="secondary" disabled>お手本 → 初回</button><button id="compare-practice" class="secondary" disabled>お手本 → 練習後</button><button id="download-first" class="text-button" disabled>初回を保存</button><button id="download-practice" class="text-button" disabled>練習後を保存</button></div>
+<audio id="take-player" preload="metadata" hidden></audio>
+<p class="hint">録音は端末内だけで処理し、外部へ送信しません。セッション終了・ページ再読み込みで消えます。必要なら次へ進む前に保存してください。</p>
+</section>
 <button id="check" class="primary wide">模範解答を見る</button>
 <div id="result" hidden>
 <div class="model-answer"><div class="section-head"><span class="eyebrow">MODEL ANSWER</span><button id="speak" class="secondary">▶ 音声を聞く</button></div><p id="correct" lang="en"></p></div>
 <p class="hint">意味が合っていれば、別の自然な表現でもOK。今回は自己評価で記録します。</p>
-<p class="evaluation-label">どのくらいスムーズに言えましたか？</p>
+<p class="evaluation-label">答えを見る前、どのくらいスムーズに言えましたか？</p>
 <div class="grades"><button data-grade="0"><span>↻</span>言えない<small>3問後に再挑戦</small></button><button data-grade="1"><span>≈</span>迷った<small>明日もう一度</small></button><button data-grade="2"><span>✓</span>即答できた<small>復習間隔を延ばす</small></button></div>
 </div>
 </section>
@@ -57,7 +67,7 @@
 <section class="card"><h2>音声設定</h2><label for="rate">読み上げ速度</label><select id="rate"><option value="0.7">ゆっくり · 0.7</option><option value="0.85" selected>標準 · 0.85</option><option value="1">自然な速さ · 1.0</option></select><label class="checkbox"><input id="playback" type="checkbox"> サイレントモード対策を試す</label><p class="hint">対応するSafariで音声セッションを再生用に設定します。読み上げ音声・iOSにより効果は異なります。音が出ない場合はサイレントモードを解除し、メディア音量を確認してください。他のアプリの再生が止まる場合があります。</p><p class="hint">iPhoneは英語キーボードのマイクを推奨します。試験機能の音声認識はブラウザ提供元へ音声が送られる場合があります。読み上げは端末・ブラウザの機能を使います。</p></section>
 <section class="card"><h2>データの管理</h2><p class="hint">記録はこのブラウザ・端末内に保存されます。別端末への移行やブラウザデータ削除の前にバックアップしてください。</p><button id="export" class="secondary wide">問題集と履歴をバックアップ</button><label class="file-label">バックアップを復元<input type="file" id="restore" accept=".json,application/json"></label><button id="reset" class="danger wide">学習履歴をリセット</button></section>
 </div>
-<footer>瞬間英作文 Trainer · v0.3.0<br>Practice a little. Speak with confidence.</footer>
+<footer>瞬間英作文 Trainer · v0.4.0<br>Practice a little. Speak with confidence.</footer>
 <noscript>このアプリにはJavaScriptを有効にしてください。</noscript>
 </main>
 </body>

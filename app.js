@@ -1,5 +1,9 @@
-import {today,gradeRecord,candidates,createSession,nextCard,recordAnswer,stats,importCSV,validateState} from './core.js?v=0.3.0';
-import {demo} from './demo.js?v=0.3.0';
+import {today,gradeRecord,candidates,createSession,nextCard,recordAnswer,stats,importCSV,validateState} from './core.js?v=0.4.0';
+import {demo} from './demo.js?v=0.4.0';
+import {tr,initLanguage} from './i18n.js?v=0.4.0';
+import {initRecording} from './recording.js?v=0.4.0';
+let recording=null;
+const ask=message=>confirm(tr(message));
 const $=id=>document.getElementById(id);
 const KEY='iet-v3';
 let state={schema:3,cards:demo,history:{},source:'サンプル20問',session:null};
@@ -19,9 +23,9 @@ function save(){
   catch{notice('端末に保存できません。今回の変更は再読み込みで失われます。「問題集・記録」からバックアップしてください。');return false;}
 }
 function audioType(type){try{if('audioSession' in navigator)navigator.audioSession.type=type;}catch{/* Unsupported browser: retain built-in defaults. */}}
-function stopSpeech(){speechToken++;clearTimeout(speechTimer);window.speechSynthesis?.cancel();audioType('auto');}
+function stopSpeech(){if(typeof finishSpeech==='function'){const finish=finishSpeech;finishSpeech=null;finish(false);}speechToken++;clearTimeout(speechTimer);window.speechSynthesis?.cancel();audioType('auto');}
 function stopRecognition(){if(recognition){recognition.onresult=null;recognition.onerror=null;recognition.onend=null;try{recognition.abort();}catch{}recognition=null;}$('mic').textContent='音声認識（試験機能）';}
-function stopMedia(){stopRecognition();stopSpeech();}
+function stopMedia(){recording?.interrupt();stopRecognition();stopSpeech();}
 function updateStats(){
   const s=stats(state.cards,state.history);
   $('due-count').textContent=s.due;$('new-count').textContent=s.new;$('weak-count').textContent=s.weak;$('weak-badge').textContent=s.weak+'問';
@@ -38,10 +42,10 @@ function updateStats(){
 }
 function tab(data){$('home').hidden=data;$('data').hidden=!data;$('home-tab').toggleAttribute('aria-current',!data);$('data-tab').toggleAttribute('aria-current',data);if(!data)$('home-tab').setAttribute('aria-current','page');else $('data-tab').setAttribute('aria-current','page');updateStats();}
 $('home-tab').onclick=()=>tab(false);$('data-tab').onclick=()=>tab(true);
-function showDashboard(){stopMedia();session=null;current=null;$('practice').hidden=true;$('summary').hidden=true;$('dashboard').hidden=false;updateStats();}
+function showDashboard(){stopMedia();recording?.clear();session=null;current=null;$('practice').hidden=true;$('summary').hidden=true;$('dashboard').hidden=false;updateStats();}
 function start(mode){
   const pool=candidates(state.cards,state.history,mode);if(!pool.length){updateStats();return;}
-  stopMedia();session=createSession(state.cards,state.history,mode,Number($('session-size').value));
+  stopMedia();recording?.clear();session=createSession(state.cards,state.history,mode,Number($('session-size').value));
   $('dashboard').hidden=true;$('summary').hidden=true;$('practice').hidden=false;showNext();
 }
 function showNext(){
@@ -57,10 +61,11 @@ function showNext(){
   $('category').textContent=current.cat||'英作文';$('question').textContent=current.jp;$('answer').value='';
   $('result').hidden=true;$('check').hidden=false;$('status').textContent='';
   document.querySelectorAll('[data-grade]').forEach(b=>b.disabled=false);
+  recording?.newCard();
   $('question').focus({preventScroll:true});
 }
 function endSession(reason){
-  stopMedia();const answers=session.answers,counts=[0,0,0];answers.forEach(a=>counts[a.grade]++);
+  stopMedia();recording?.clear();const answers=session.answers,counts=[0,0,0];answers.forEach(a=>counts[a.grade]++);
   $('practice').hidden=true;$('summary').hidden=false;$('dashboard').hidden=true;
   const weakLeft=stats(state.cards,state.history).weak;
   $('summary-title').textContent=reason==='stop'?'ここまでの学習を記録しました':session.mode==='weak'&&!weakLeft?'苦手問題をすべて卒業しました！':reason==='empty'?'今回の学習は完了！':'おつかれさまでした！';
@@ -72,8 +77,8 @@ function endSession(reason){
   session=null;current=null;updateStats();$('summary-title').setAttribute('tabindex','-1');$('summary-title').focus({preventScroll:true});
 }
 $('start').onclick=()=>start('normal');$('start-weak').onclick=()=>start('weak');$('back').onclick=showDashboard;
-$('finish').onclick=()=>{if(session&&confirm('学習を途中終了しますか？ 回答済みの記録は保存されています。'))endSession('stop');};
-$('check').onclick=()=>{if(!current)return;stopRecognition();revealed=true;$('correct').textContent=current.en;$('result').hidden=false;$('check').hidden=true;};
+$('finish').onclick=()=>{if(session&&ask('学習を途中終了しますか？ 回答済みの記録は保存されています。'))endSession('stop');};
+$('check').onclick=()=>{if(!current)return;stopMedia();revealed=true;$('correct').textContent=current.en;$('result').hidden=false;$('check').hidden=true;recording?.refresh();};
 document.querySelectorAll('[data-grade]').forEach(b=>b.onclick=()=>{
   if(!session||!current||!revealed)return;
   revealed=false;document.querySelectorAll('[data-grade]').forEach(el=>el.disabled=true);
@@ -84,30 +89,35 @@ $('keyboard').onclick=()=>{stopMedia();$('answer').focus();$('status').textConte
 $('mic').onclick=()=>{
   if(!current)return;
   if(recognition){stopRecognition();$('status').textContent='音声認識を停止しました。';return;}
-  stopSpeech();audioType('auto');
+  recording?.interrupt();stopSpeech();audioType('auto');
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){$('answer').focus();$('status').textContent='このブラウザは音声認識に非対応です。英語キーボードのマイクをご利用ください。';return;}
   try{
     const r=new SR();recognition=r;r.lang='en-US';r.continuous=false;r.interimResults=false;
     r.onresult=e=>{if(recognition===r&&current)$('answer').value=e.results[0][0].transcript;};
     r.onerror=()=>{$('status').textContent='音声を入力できませんでした。英語キーボードのマイクをご利用ください。';stopRecognition();};
-    r.onend=()=>{if(recognition===r){recognition=null;$('mic').textContent='音声認識（試験機能）';if($('status').textContent==='聞き取り中…')$('status').textContent='聞き取りを終了しました。';}};
+    r.onend=()=>{if(recognition===r){recognition=null;$('mic').textContent='音声認識（試験機能）';$('status').textContent='聞き取りを終了しました。';}};
     r.start();$('status').textContent='聞き取り中…';$('mic').textContent='■ 認識を止める';
   }catch{stopRecognition();$('status').textContent='音声認識を開始できません。英語キーボードのマイクをご利用ください。';}
 };
-$('speak').onclick=()=>{
-  if(!current)return;
-  stopMedia();if(!('speechSynthesis' in window)){$('status').textContent='このブラウザは読み上げに非対応です。';return;}
+let finishSpeech=null;
+async function playModel(){
+  if(!current)return false;
+  stopRecognition();stopSpeech();
+  if(!('speechSynthesis' in window)){$('status').textContent='このブラウザは読み上げに非対応です。';return false;}
   if(settings.playback)audioType('playback');
   const token=++speechToken,u=new SpeechSynthesisUtterance(current.en);u.lang='en-US';u.rate=settings.rate;
-  const voices=speechSynthesis.getVoices();const voice=voices.find(v=>v.lang==='en-US'&&v.localService)||voices.find(v=>v.lang.startsWith('en')&&v.localService)||voices.find(v=>v.lang==='en-US');if(voice)u.voice=voice;
-  const release=()=>{if(token===speechToken){clearTimeout(speechTimer);audioType('auto');}};
-  u.onstart=()=>{if(token===speechToken){clearTimeout(speechTimer);$('status').textContent='読み上げ中。音が出ない場合はサイレントモードと音量をご確認ください。';}};
-  u.onend=()=>{release();if(token===speechToken)$('status').textContent='読み上げが終了しました。';};
-  u.onerror=()=>{release();if(token===speechToken)$('status').textContent='読み上げできませんでした。音声設定・音量を確認し、もう一度お試しください。';};
-  speechTimer=setTimeout(()=>{if(token===speechToken){stopSpeech();$('status').textContent='読み上げが開始されませんでした。再度タップするか、ページを開き直してください。';}},8000);
-  try{speechSynthesis.speak(u);}catch{release();$('status').textContent='読み上げを開始できませんでした。';}
-};
+  const voices=speechSynthesis.getVoices(),voice=voices.find(v=>v.lang==='en-US'&&v.localService)||voices.find(v=>v.lang.startsWith('en')&&v.localService)||voices.find(v=>v.lang==='en-US');if(voice)u.voice=voice;
+  return new Promise(resolve=>{
+    let done=false;const finish=ok=>{if(done)return;done=true;clearTimeout(speechTimer);if(token===speechToken){audioType('auto');finishSpeech=null;}resolve(ok);};finishSpeech=finish;
+    u.onstart=()=>{if(token===speechToken){clearTimeout(speechTimer);speechTimer=setTimeout(()=>{finish(false);stopSpeech();},120000);$('status').textContent='読み上げ中。音が出ない場合はサイレントモードと音量をご確認ください。';}};
+    u.onend=()=>{if(token===speechToken)$('status').textContent='読み上げが終了しました。';finish(token===speechToken);};
+    u.onerror=()=>{if(token===speechToken)$('status').textContent='読み上げできませんでした。音声設定・音量を確認し、もう一度お試しください。';finish(false);};
+    speechTimer=setTimeout(()=>{if(token===speechToken){$('status').textContent='読み上げが開始されませんでした。再度タップするか、ページを開き直してください。';finish(false);stopSpeech();}},8000);
+    try{speechSynthesis.speak(u);}catch{finish(false);$('status').textContent='読み上げを開始できませんでした。';}
+  });
+}
+$('speak').onclick=()=>{stopMedia();playModel();};
 $('rate').value=String(settings.rate);$('playback').checked=settings.playback;
 $('rate').onchange=()=>{settings.rate=Number($('rate').value);save();};
 $('playback').onchange=()=>{settings.playback=$('playback').checked;stopSpeech();save();if(settings.playback&&!('audioSession' in navigator))notice('このブラウザは音声セッション設定に非対応です。通常の読み上げを使用します。');};
@@ -120,12 +130,12 @@ $('csv').onchange=async e=>{
   const file=e.target.files[0];if(!file)return;
   try{if(file.size>10*1024*1024)throw Error('CSVは10MB以内にしてください。');
     const imported=importCSV(await file.text());
-    if(!confirm(`${imported.cards.length}問を取り込み、問題集を置き換えます。同じID・本文の履歴のみ引き継ぎます。続けますか？`))return;
+    if(!ask(`${imported.cards.length}問を取り込み、問題集を置き換えます。同じID・本文の履歴のみ引き継ぎます。続けますか？`))return;
     replaceCards(imported.cards,file.name);$('import-status').textContent=`${imported.cards.length}問を取り込みました。空欄のある${imported.skipped}行はスキップしました。`;
   }catch(err){$('import-status').textContent='取り込みエラー：'+err.message;}finally{e.target.value='';}
 };
-$('demo').onclick=()=>{if(confirm('サンプル20問に切り替えますか？ 別の問題集とその履歴は削除されます。必要なら先にバックアップしてください。'))replaceCards(demo,'サンプル20問');};
-$('reset').onclick=()=>{if(confirm('学習履歴をすべて削除しますか？ 問題集は残ります。')){state.history={};showDashboard();save();notice('学習履歴をリセットしました。');}};
+$('demo').onclick=()=>{if(ask('サンプル20問に切り替えますか？ 別の問題集とその履歴は削除されます。必要なら先にバックアップしてください。'))replaceCards(demo,'サンプル20問');};
+$('reset').onclick=()=>{if(ask('学習履歴をすべて削除しますか？ 問題集は残ります。')){state.history={};showDashboard();save();notice('学習履歴をリセットしました。');}};
 $('export').onclick=()=>{
   const blob=new Blob([JSON.stringify({...state,settings,session:null},null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`instant-english-backup-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
@@ -133,11 +143,14 @@ $('export').onclick=()=>{
 $('restore').onchange=async e=>{
   const file=e.target.files[0];if(!file)return;
   try{if(file.size>20*1024*1024)throw Error('ファイルは20MB以内にしてください。');const restored=validateState(JSON.parse(await file.text()));
-    if(!confirm(`${restored.cards.length}問と履歴を復元します。現在のデータは置き換わります。続けますか？`))return;
+    if(!ask(`${restored.cards.length}問と履歴を復元します。現在のデータは置き換わります。続けますか？`))return;
     state=restored;showDashboard();save();notice('問題集と学習履歴を復元しました。');
   }catch(err){notice('復元できません：'+err.message);}finally{e.target.value='';}
 };
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMedia();else updateStats();});
+$('data-tab').addEventListener('click',stopMedia);
 window.addEventListener('pagehide',stopMedia);
 window.addEventListener('storage',e=>{if(e.key===KEY){notice('別のタブでデータが変更されました。最新の記録を使うため再読み込みします。');location.reload();}});
+recording=initRecording({beforeAudio:()=>{stopRecognition();stopSpeech();},playModel,audioType,getCard:()=>current,getRevealed:()=>revealed});
+initLanguage();
 showDashboard();

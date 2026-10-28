@@ -41,6 +41,14 @@
 <textarea id="answer" lang="en" autocapitalize="sentences" spellcheck="false" placeholder="Type your answer here..."></textarea>
 <div class="answer-actions"><button id="keyboard" class="secondary">キーボードで音声入力</button><button id="mic" class="text-button">音声認識（試験機能）</button></div>
 <p id="status" class="hint" role="status" aria-live="polite"></p>
+
+<button id="check" class="primary wide">模範解答を見る</button>
+<div id="result" hidden>
+<div class="model-answer"><div class="section-head"><span class="eyebrow">MODEL ANSWER</span><button id="speak" class="secondary">▶ 音声を聞く</button></div><p id="correct" lang="en"></p></div>
+<p class="hint">意味が合っていれば、別の自然な表現でもOK。今回は自己評価で記録します。</p>
+<p class="evaluation-label">答えを見る前、どのくらいスムーズに言えましたか？</p>
+<div class="grades"><button data-grade="0"><span>↻</span>言えない<small>3問後に再挑戦</small></button><button data-grade="1"><span>≈</span>迷った<small>明日もう一度</small></button><button data-grade="2"><span>✓</span>即答できた<small>復習間隔を延ばす</small></button></div>
+</div>
 <section id="recording-panel" class="recording-panel" aria-labelledby="record-heading">
 <h3 id="record-heading">録音して聞き比べる</h3>
 <p class="hint">録音は任意です。答えを見ずに初回を録り、解答確認後に練習後の声と比べられます。</p>
@@ -50,13 +58,6 @@
 <audio id="take-player" preload="metadata" hidden></audio>
 <p class="hint">録音は端末内だけで処理し、外部へ送信しません。セッション終了・ページ再読み込みで消えます。必要なら次へ進む前に保存してください。</p>
 </section>
-<button id="check" class="primary wide">模範解答を見る</button>
-<div id="result" hidden>
-<div class="model-answer"><div class="section-head"><span class="eyebrow">MODEL ANSWER</span><button id="speak" class="secondary">▶ 音声を聞く</button></div><p id="correct" lang="en"></p></div>
-<p class="hint">意味が合っていれば、別の自然な表現でもOK。今回は自己評価で記録します。</p>
-<p class="evaluation-label">答えを見る前、どのくらいスムーズに言えましたか？</p>
-<div class="grades"><button data-grade="0"><span>↻</span>言えない<small>3問後に再挑戦</small></button><button data-grade="1"><span>≈</span>迷った<small>明日もう一度</small></button><button data-grade="2"><span>✓</span>即答できた<small>復習間隔を延ばす</small></button></div>
-</div>
 </section>
 <section id="summary" class="card" hidden aria-live="polite"><p class="eyebrow">SESSION COMPLETE</p><h2 id="summary-title"></h2><p id="summary-text"></p><div id="summary-counts" class="metrics"></div><p id="summary-note" class="hint"></p><button id="back" class="primary wide">学習ホームへ</button></section>
 <section class="footnote"><strong>小さく繰り返して、言える表現に。</strong><p>即答できたら 2 → 4 → 8 → 16 → 30日後。<br>言えない・迷った問題は、翌日にもう一度。</p></section>

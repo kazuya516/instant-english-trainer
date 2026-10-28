@@ -1,7 +1,7 @@
-import {today,gradeRecord,candidates,createSession,nextCard,recordAnswer,stats,importCSV,validateState} from './core.js?v=0.4.0';
-import {demo} from './demo.js?v=0.4.0';
-import {tr,initLanguage} from './i18n.js?v=0.4.0';
-import {initRecording} from './recording.js?v=0.4.0';
+import {today,gradeRecord,candidates,createSession,nextCard,recordAnswer,stats,importCSV,validateState} from './core.js?v=0.4.1';
+import {demo} from './demo.js?v=0.4.1';
+import {tr,initLanguage} from './i18n.js?v=0.4.1';
+import {initRecording} from './recording.js?v=0.4.1';
 let recording=null;
 const ask=message=>confirm(tr(message));
 const $=id=>document.getElementById(id);
@@ -58,7 +58,7 @@ function showNext(){
   $('session-progress').textContent=`${session.answers.length+1} / ${session.target} 問`;
   $('session-percent').textContent=`${session.answers.length}回 回答済み`;
   $('session-bar').max=session.target;$('session-bar').value=session.answers.length;
-  $('category').textContent=current.cat||'英作文';$('question').textContent=current.jp;$('answer').value='';
+  $('category').textContent=current.cat||'英作文';$('question').textContent=current.jp;$('answer').value='';$('clear-answer').disabled=true;
   $('result').hidden=true;$('check').hidden=false;$('status').textContent='';
   document.querySelectorAll('[data-grade]').forEach(b=>b.disabled=false);
   recording?.newCard();
@@ -86,6 +86,12 @@ document.querySelectorAll('[data-grade]').forEach(b=>b.onclick=()=>{
   state.history[id]=gradeRecord(state.history[id],grade);recordAnswer(session,id,grade);save();updateStats();showNext();
 });
 $('keyboard').onclick=()=>{stopMedia();$('answer').focus();$('status').textContent='英語キーボードに切り替え、キーボードのマイクをタップしてください。';};
+$('answer').addEventListener('input',()=>{recording?.refresh();});
+$('clear-answer').onclick=()=>{
+  if(!$('answer').value)return;
+  stopRecognition();$('answer').value='';$('clear-answer').disabled=true;
+  $('answer').focus();$('status').textContent='入力欄をクリアしました。';
+};
 $('mic').onclick=()=>{
   if(!current)return;
   if(recognition){stopRecognition();$('status').textContent='音声認識を停止しました。';return;}
@@ -94,7 +100,7 @@ $('mic').onclick=()=>{
   if(!SR){$('answer').focus();$('status').textContent='このブラウザは音声認識に非対応です。英語キーボードのマイクをご利用ください。';return;}
   try{
     const r=new SR();recognition=r;r.lang='en-US';r.continuous=false;r.interimResults=false;
-    r.onresult=e=>{if(recognition===r&&current)$('answer').value=e.results[0][0].transcript;};
+    r.onresult=e=>{if(recognition===r&&current){$('answer').value=e.results[0][0].transcript;$('answer').dispatchEvent(new Event('input',{bubbles:true}));}};
     r.onerror=()=>{$('status').textContent='音声を入力できませんでした。英語キーボードのマイクをご利用ください。';stopRecognition();};
     r.onend=()=>{if(recognition===r){recognition=null;$('mic').textContent='音声認識（試験機能）';$('status').textContent='聞き取りを終了しました。';}};
     r.start();$('status').textContent='聞き取り中…';$('mic').textContent='■ 認識を止める';

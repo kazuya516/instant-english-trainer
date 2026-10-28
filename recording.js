@@ -43,7 +43,7 @@ export function initRecording({beforeAudio,playModel,audioType,getCard,getReveal
   $('stop-take').disabled=engine.phase!=='recording';
   for(const take of ['first','practice'])for(const action of ['play','compare','download'])$(`${action}-${take}`).disabled=busy||!engine.clips.has(key(take))||(action==='compare'&&!getRevealed());
   $('check').disabled=busy;document.querySelectorAll('[data-grade]').forEach(b=>b.disabled=busy);
-  $('keyboard').disabled=busy;$('mic').disabled=busy;$('speak').disabled=busy;
+  $('keyboard').disabled=busy;$('mic').disabled=busy;$('speak').disabled=busy;$('clear-answer').disabled=busy||!$('answer').value;
   $('recording-panel').classList.toggle('is-recording',engine.phase==='recording');
   if(message)$('record-status').textContent=message;
  }

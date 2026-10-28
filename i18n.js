@@ -1,12 +1,12 @@
 // UI copy only. Learner content is deliberately excluded from DOM translation.
 export const EN = {
-'瞬間英作文 ':'Instant English ', '瞬間英作文 Trainer · v0.4.0':'Instant English Trainer · v0.4.0', '日本語から、使える英語へ。':'Turn Japanese into usable English.',
+'瞬間英作文 ':'Instant English ', '瞬間英作文 Trainer · v0.4.1':'Instant English Trainer · v0.4.1', '日本語から、使える英語へ。':'Turn Japanese into usable English.',
 '学習':'Practice','問題集・記録':'Deck & progress','今日のトレーニング':"Today's practice",'復習から始めて、新しい表現へ。':'Review first, then learn new expressions.',
 '今日の復習':'Due today','未学習':'New cards','苦手問題':'Difficult cards','今日の復習は完了。新しい問題を学習できます。':"Today's reviews are done. You can learn new cards.",'今日の復習は完了。また明日、練習しましょう。':"Today's reviews are complete. Come back when your next review is due.",
 '1回の回答数':'Session length','再挑戦も1回として数えます':'Retries count toward the session total','5問 · まずは少し':'5 answers · A quick start','10問 · 毎日の習慣に':'10 answers · A daily habit','15問 · じっくり練習':'15 answers · Go deeper',
 '通常学習を始める ':'Start practice ','通常学習を始める →':'Start practice →','苦手集中復習 ':'Focus on difficult cards ','苦手集中復習':'Focus on difficult cards',
 '通常学習は予定日が来た復習＋未学習のみ。苦手集中復習は予定日に関係なく苦手問題を練習できます。':'Regular practice includes due reviews and new cards only. Focus mode lets you practice difficult cards at any time.',
-'途中終了':'End session','通常学習':'Regular practice','英語で答えてみましょう ':'Try saying it in English ','声に出すだけでもOK':'Speaking aloud is enough','キーボードで音声入力':'Use keyboard dictation','音声認識（試験機能）':'Speech recognition (experimental)',
+'途中終了':'End session','通常学習':'Regular practice','英語で答えてみましょう ':'Try saying it in English ','声に出すだけでもOK':'Speaking aloud is enough','キーボードで音声入力':'Use keyboard dictation','音声認識（試験機能）':'Speech recognition (experimental)','クリア':'Clear','入力文をクリア':'Clear your answer','入力欄をクリアしました。':'Answer cleared.',
 '模範解答を見る':'Show model answer','模範解答を見る前に言えたかを基準に、自己評価してください。':'Rate how well you answered BEFORE seeing the model answer.',
 '▶ 音声を聞く':'▶ Hear the model','意味が合っていれば、別の自然な表現でもOK。今回は自己評価で記録します。':'Other natural expressions are valid if the meaning is right. Use your own judgment.',
 '答えを見る前、どのくらいスムーズに言えましたか？':'How smoothly did you answer before seeing the model?',
@@ -78,7 +78,7 @@ export function initLanguage(){
  };
  const render=()=>{
   document.documentElement.lang=language;
-  document.title=language==='en'?'Instant English Trainer v0.4':'瞬間英作文 Trainer v0.4';
+  document.title=language==='en'?'Instant English Trainer v0.4.1':'瞬間英作文 Trainer v0.4.1';
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;
   while((node=walker.nextNode()))if(!node.parentElement?.closest(excluded))convert(node);
   document.querySelectorAll('[aria-label],[placeholder]').forEach(el=>{if(el.closest(excluded))return;let map=attributes.get(el);if(!map){map={};attributes.set(el,map);}for(const attr of ['aria-label','placeholder']){if(!el.hasAttribute(attr))continue;const value=el.getAttribute(attr),prev=map[attr];const original=prev&&value===prev.output?prev.original:value,output=tr(original);map[attr]={original,output};if(value!==output)el.setAttribute(attr,output);}});
